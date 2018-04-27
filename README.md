@@ -1,3 +1,7 @@
+> This is a fork of the original Grove LED Bar library for Arduino. 
+>
+> This changes the library to work with Calliope mini.
+
 Grove LED Bar
 -------------------------------------------------------------
 ![image](Grove_LED_Bar.gif)
