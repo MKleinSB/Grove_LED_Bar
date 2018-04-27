@@ -10,6 +10,9 @@
   Modify: Long, 2015-01-07
   User can change the brightness level for each LED segment
   Rename constant to avoid name conflict
+
+  Modify: Patrick Werner <boon.werner@gmail.com>, 2018-04-23
+  Changed to work for Calliope mini
   
   The MIT License (MIT)
 
@@ -37,7 +40,7 @@
 #ifndef Grove_LED_Bar_H
 #define Grove_LED_Bar_H
 
-#include <Arduino.h>
+#include <MicroBit.h>
 
 // Avoid name conflict
 #define GLB_CMDMODE 0x00  // Work on 8-bit mode
@@ -49,8 +52,8 @@ class Grove_LED_Bar
 
 private:
 
-  unsigned int __pinClock;  // Clock pin
-  unsigned int __pinData;   // Data pin
+  DigitalOut __pinClock;  // Clock pin
+  DigitalOut __pinData;   // Data pin
   bool __greenToRed;        // Orientation (0 = red to green, 1 = green to red)
   unsigned char __state[10];// Led state, brightness for each LED
 
@@ -60,14 +63,13 @@ private:
 
 public:
 
-  Grove_LED_Bar(unsigned char pinClock, unsigned char pinData, bool greenToRed);  // Initialize
-  void begin(){pinMode(__pinClock, OUTPUT); pinMode(__pinData, OUTPUT);}
+  Grove_LED_Bar(PinName pinClock, PinName pinData, bool greenToRed=false);  // Initialize
   void setGreenToRed(bool greenToRed);             // (Re)set orientation
   void setLevel(float level);                      // Set level, range from 0 to 10
-  void setLed(unsigned char led, float brightness);// Set brightness for a single led, range from 0 to 1
+  void setLed(unsigned char led, int brightness);// Set brightness for a single led, range from 0 to 8
   void toggleLed(unsigned char led);               // Toggle a single led
   void setBits(unsigned int bits);                 // Toggle leds to match given bits
-  unsigned int const getBits();                    // Get the current state
+  int getBits();                    // Get the current state
 };
 
 #endif

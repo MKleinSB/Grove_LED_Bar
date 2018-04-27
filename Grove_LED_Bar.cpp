@@ -7,6 +7,9 @@
   Modify: Loovee, 2014-2-26
   User can choose which Io to be used.
 
+  Modify: Patrick Werner <boon.werner@gmail.com>, 2018-04-23
+  Changed to work for Calliope mini
+
   The MIT License (MIT)
 
   Copyright (c) 2013 Seeed Technology Inc.
@@ -32,30 +35,25 @@
 
 #include "Grove_LED_Bar.h"
 
-Grove_LED_Bar::Grove_LED_Bar(unsigned char pinClock, unsigned char pinData, bool greenToRed)
+Grove_LED_Bar::Grove_LED_Bar(PinName pinClock, PinName pinData, bool greenToRed) : __pinClock(pinClock), __pinData(pinData)
 {
-  __pinClock = pinClock;
-  __pinData = pinData;
   __greenToRed = greenToRed;  // ascending or decending
 
-  for (byte i = 0; i < 10; i++)
+  for (int i = 0; i < 10; i++)
     __state[i] = 0x00;  // persist state so individual leds can be toggled
-
-  pinMode(__pinClock, OUTPUT);
-  pinMode(__pinData, OUTPUT);
 }
 
 
 // Send the latch command
 void Grove_LED_Bar::latchData()
 {
-  digitalWrite(__pinData, LOW);
-  delayMicroseconds(10);
+  __pinData = 0;
+  wait_us(10);
 
   for (unsigned char i = 0; i < 4; i++)
   {
-    digitalWrite(__pinData, HIGH);
-    digitalWrite(__pinData, LOW);
+    __pinData = 1;
+    __pinData = 0;
   }
 }
 
@@ -66,12 +64,12 @@ void Grove_LED_Bar::sendData(unsigned int data)
   unsigned int state = 0;
   for (unsigned char i = 0; i < 16; i++)
   {
-    unsigned int state1 = (data & 0x8000) ? HIGH : LOW;
-    digitalWrite(__pinData, state1);
+    unsigned int state1 = (data & 0x8000) ? 1 : 0;
+    __pinData = state1;
 
     //state = digitalRead(__pinClock) ? LOW : HIGH;
     state = 1-state;
-    digitalWrite(__pinClock, state);
+    __pinClock = state;
 
     data <<= 1;
   }
@@ -98,9 +96,9 @@ void Grove_LED_Bar::setLevel(float level)
   level *= 8; // there are 8 (noticable) levels of brightness on each segment
 
   // Place number of 'level' of 1-bits on __state
-  for (byte i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     __state[i] = (level > 8) ? ~0 :
-                 (level > 0) ? ~(~0 << byte(level)) : 0;
+                 (level > 0) ? ~(~0 << int(level)) : 0;
 
     level -= 8;
   };
@@ -110,35 +108,29 @@ void Grove_LED_Bar::setLevel(float level)
 
 
 // Set a single led
-// led (1-10)
-// brightness (0-1)
-void Grove_LED_Bar::setLed(unsigned char led, float brightness)
+// led (0-9)
+// brightness (0-8)
+void Grove_LED_Bar::setLed(unsigned char led, int brightness)
 {
-  led = max(1, min(10, led));
-  brightness = max(0, min(brightness, 1));
-
-  // Zero based index 0-9 for bitwise operations
-  led--;
+  led = max(0, min(9, led));
+  brightness = max(0, min(brightness, 8));
 
   // 8 (noticable) levels of brightness
   // 00000000 darkest
   // 00000011 brighter
   // ........
   // 11111111 brightest
-  __state[led] = ~(~0 << (unsigned char) (brightness*8));
+  __state[led] = ~(~0 << (unsigned char) brightness);
 
   setData(__state);
 }
 
 
 // Toggle a single led
-// led (1-10)
+// led (0-9)
 void Grove_LED_Bar::toggleLed(unsigned char led)
 {
-  led = max(1, min(10, led));
-
-  // Zero based index 0-9 for bitwise operations
-  led--;
+  led = max(0, min(9, led));
 
   __state[led] = __state[led] ? 0 : ~0;
 
@@ -194,7 +186,7 @@ void Grove_LED_Bar::setBits(unsigned int bits)
 
 
 // Return the current bits
-unsigned int const Grove_LED_Bar::getBits()
+int Grove_LED_Bar::getBits()
 {
   unsigned int __bits = 0x00;
   for (unsigned char i = 0; i < 10; i++)
